@@ -6,7 +6,8 @@ from tqdm import tqdm
 from torch_geometric.datasets import AmazonBook
 from torch_geometric.nn import LightGCN
 from torch_geometric.utils import degree
-from YOUCHOOSE import YOUCHOOSEWRAPPER
+from RetailRocket import RetailRocketWrapper
+
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -14,19 +15,20 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # dataset = AmazonBook(path)
 # data = dataset[0]
 try:
-    data = torch.load('data/YOUCHOOSE/data.pt')
+    data = torch.load('data/RetailRocket/data.pt')
     print('Data loaded from file')
     print(data)
 except:
-    data  = YOUCHOOSEWRAPPER()
-    print('Data loaded from YOUCHOOSE')
+    data  = RetailRocketWrapper()
+    print('Data loaded from RR')
     print(data)
-    torch.save(data, 'data/YOUCHOOSE/data.pt')
+    torch.save(data, 'data/RetailRocket/data.pt')
 num_users, num_books = data['user'].num_nodes, data['item'].num_nodes
+
 data = data.to_homogeneous().to(device)
 
 # Use all message passing edges as training labels:
-batch_size = 2000
+batch_size = 20000
 mask = data.edge_index[0] < data.edge_index[1]
 train_edge_label_index = data.edge_index[:, mask]
 train_loader = torch.utils.data.DataLoader(
@@ -37,7 +39,7 @@ train_loader = torch.utils.data.DataLoader(
 
 model = LightGCN(
     num_nodes=data.num_nodes,
-    embedding_dim=64,
+    embedding_dim=32,
     num_layers=2,
 ).to(device)
 
@@ -122,6 +124,6 @@ def trainmodel():
         print(f'Epoch: {epoch:03d}, Loss: {loss:.4f}')
             #  Precision@20: {precision:.4f}, Recall@20: {recall:.4f}')
         #save the model
-    torch.save(model.state_dict(), 'models/lightgcn.pth')
+    torch.save(model.state_dict(), 'models/lightgcnrr.pth')
 
 trainmodel()

@@ -94,15 +94,14 @@ def YOUCHOOSEWRAPPER():
     #train_df.to_csv(osp.join("data", "YOUCHOOSE", "raw", "yoochoose-train.dat"), index=False, header=False)
     #del train_df
 
-    train_columns = ['sessionid', 'timestamp', 'itemid', 'Category', 'price', 'quantity']
-    train_path = osp.join("data", "YOUCHOOSE", "raw", "yoochoose-train.dat")
+    train_columns = ['sessionid', 'timestamp', 'itemid', 'price', 'quantity']
+    train_path = osp.join("data", "YOUCHOOSE", "raw", "yoochoose-buys.dat")
     test_path = osp.join("data", "YOUCHOOSE", "raw","yoochoose-test.dat")
 
 
     user_x, user_mapping = load_node_csv(train_path, index_col='sessionid', delimiter=",", names=train_columns)
     item_x , item_mapping = load_node_csv(train_path, index_col='itemid', delimiter=",", names=train_columns,
-                                        encoders={'price': IdentityEncoder(dtype=torch.int64),
-                                                  "Category": IdentityEncoder(dtype=torch.long)})
+                                        encoders={'price': IdentityEncoder(dtype=torch.int64)})
 
 
     edge_index, edge_label = load_edge_csv(
@@ -116,33 +115,16 @@ def YOUCHOOSEWRAPPER():
                 'quantity': IdentityEncoder(dtype=torch.int64)}
     )
 
+
     data = HeteroData()
     data['user'].num_nodes = len(user_mapping)  # Users do not have any features.
     data['item'].x = item_x
     data['user', 'rates', 'item'].edge_index = edge_index
     data['user', 'rates', 'item'].edge_label = edge_label
-    print(data)
+    data['user', 'rates', 'item'].edge_label_index = edge_label
     return data
 
-    # # We can now convert `data` into an appropriate format for training a
-    # # graph-based machine learning model:
-
-    # # 1. Add a reverse ('movie', 'rev_rates', 'user') relation for message passing.
-    # data = ToUndirected()(data)
-    # del data['item', 'rated_by', 'user'].edge_label  # Remove "reverse" label.
-
-    # # 2. Perform a link-level split into training, validation, and test edges.
-    # transform = RandomLinkSplit(
-    #     num_val=0.05,
-    #     num_test=0.1,
-    #     neg_sampling_ratio=0.0,
-    #     edge_types=[('user', 'rates', 'item')],
-    #     rev_edge_types=[('item', 'rev_rates', 'user')],
-    # )
-    # train_data, val_data, test_data = transform(data)
-    # print(train_data)
-    # print(val_data)
-    # print(test_data)
-
 if __name__ == '__main__':
-    YOUCHOOSEWRAPPER()
+    data = YOUCHOOSEWRAPPER()
+    print(data.num_nodes)
+    torch.save(data, 'data/YOUCHOOSE/data.pt')
