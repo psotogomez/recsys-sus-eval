@@ -11,3 +11,8 @@ https://www.kaggle.com/datasets/retailrocket/ecommerce-dataset
 
 ##YOUCHOOSE
 https://s3-eu-west-1.amazonaws.com/yc-rdata/yoochoose-data.7z
+
+## Installation
+
+Install pytorch 2.4.1 
+Install pyg 

@@ -6,13 +6,15 @@ from tqdm import tqdm
 from torch_geometric.datasets import AmazonBook
 from torch_geometric.nn import LightGCN
 from torch_geometric.utils import degree
+from YOUCHOOSE import YOUCHOOSEWRAPPER
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-path = osp.join(osp.dirname(osp.realpath(__file__)), '..', 'data', 'Amazon')
-dataset = AmazonBook(path)
-data = dataset[0]
-num_users, num_books = data['user'].num_nodes, data['book'].num_nodes
+# path = osp.join(osp.dirname(osp.realpath(__file__)), '..', 'data', 'Amazon')
+# dataset = AmazonBook(path)
+# data = dataset[0]
+data  = YOUCHOOSEWRAPPER()
+num_users, num_books = data['user'].num_nodes, data['item'].num_nodes
 data = data.to_homogeneous().to(device)
 
 # Use all message passing edges as training labels:
@@ -30,10 +32,12 @@ model = LightGCN(
     embedding_dim=64,
     num_layers=2,
 ).to(device)
+
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
 
 def train():
+    print("Training")
     total_loss = total_examples = 0
 
     for index in tqdm(train_loader):
@@ -68,6 +72,7 @@ def train():
 
 @torch.no_grad()
 def test(k: int):
+    print("Testing")
     emb = model.get_embedding(data.edge_index)
     user_emb, book_emb = emb[:num_users], emb[num_users:]
 
@@ -104,5 +109,6 @@ def test(k: int):
 for epoch in range(1, 101):
     loss = train()
     precision, recall = test(k=20)
-    print(f'Epoch: {epoch:03d}, Loss: {loss:.4f}, Precision@20: '
-          f'{precision:.4f}, Recall@20: {recall:.4f}')
+    print(f'Epoch: {epoch:03d}, Loss: {loss:.4f}, Precision@20: {precision:.4f}, Recall@20: {recall:.4f}')
+    #save the model
+    torch.save(model.state_dict(), 'models/lightgcn.pth')
